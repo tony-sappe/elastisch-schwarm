@@ -8,12 +8,11 @@ Quickly spin up a Docker cluster of Elastic products for testing
 ## Quickstart
 
 Default configuration will create a three node cluster with an additional kibana node.
-The nodes will use the latest stable version 6.5.3 at the time of writing.
-Some configs are stored in .env
+The nodes will use ver. 6.5.3, the latest stable version at the time of writing.
 
 1. (Assuming you already have docker installed and running)
 ```$ docker-compose up```
-2. Click [http://localhost:5601](http://localhost:5601)
+2. Click [http://localhost:5656](http://localhost:5656)
 3. ....
 4. Profit
 
@@ -33,6 +32,15 @@ Some configs are stored in .env
     - `logstash-2015.05.18`
     - `logstash-2015.05.19`
     - `logstash-2015.05.20`
+
+
+## Kibana Monitoring and X-Pack Trial
+
+Commands for both are store in `curl_cmds.sh`. Running the script will activate the 30-day X-Pack trial.
+
+
+## Custom Parameters
+See `.env` for some configuration settings. Edits will be applied when restarting using `docker-compose`
 
 
 ## Troubleshooting

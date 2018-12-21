@@ -18,7 +18,7 @@ services:
     volumes:
       - esdata0:/usr/share/elasticsearch/data
     ports:
-      - 9200:${PUBLIC_ELASTIC_PORT}
+      - ${PUBLIC_ELASTIC_PORT}:9200
     networks:
       - esnet
   es-node-1:
@@ -66,7 +66,7 @@ services:
       SERVER_NAME: kibana.local
       ELASTICSEARCH_URL: http://${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}
     ports:
-      - 5601:${PUBLIC_KIBANA_PORT}
+      - ${PUBLIC_KIBANA_PORT}:5601
     networks:
       - esnet
     depends_on:
