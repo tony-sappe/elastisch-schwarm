@@ -71,17 +71,17 @@ services:
       - esnet
     depends_on:
       - ${ES_NODE_PREFIX}-0
-  filebeat:
-    image: docker.elastic.co/filebeat/filebeat:${VER}
-    container_name: filebeat
-    environment:
-      - SERVER_NAME=filebeat.local
-      - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
-      - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}]
-    networks:
-      - esnet
-    depends_on:
-      - kibana
+  # filebeat:
+  #   image: docker.elastic.co/filebeat/filebeat:${VER}
+  #   container_name: filebeat
+  #   environment:
+  #     - SERVER_NAME=filebeat.local
+  #     - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
+  #     - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}]
+  #   networks:
+  #     - esnet
+  #   depends_on:
+  #     - kibana
   # logstash:
   #   image: docker.elastic.co/logstash/logstash:${VER}
   #   container_name: logstash
