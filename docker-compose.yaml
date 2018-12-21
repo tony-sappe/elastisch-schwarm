@@ -1,0 +1,108 @@
+version: '3.2'
+services:
+  es-node-0:
+    hostname: ${ES_NODE_PREFIX}-0
+    image: docker.elastic.co/elasticsearch/elasticsearch:${VER}
+    container_name: ${ES_NODE_PREFIX}-0
+    environment:
+      - cluster.name=${CLUSTER}
+      - node.name=${ES_NODE_PREFIX}-0
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms${JVM_MEM} -Xmx${JVM_MEM}"
+      - "discovery.zen.ping.unicast.hosts=[ ${ES_NODE_PREFIX}-0, ${ES_NODE_PREFIX}-1, ${ES_NODE_PREFIX}-2 ]"
+      - "discovery.zen.minimum_master_nodes: 2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata0:/usr/share/elasticsearch/data
+    ports:
+      - 9200:${PUBLIC_ELASTIC_PORT}
+    networks:
+      - esnet
+  es-node-1:
+    hostname: ${ES_NODE_PREFIX}-1
+    image: docker.elastic.co/elasticsearch/elasticsearch:${VER}
+    container_name: ${ES_NODE_PREFIX}-1
+    environment:
+      - cluster.name=${CLUSTER}
+      - node.name=${ES_NODE_PREFIX}-1
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms${JVM_MEM} -Xmx${JVM_MEM}"
+      - "discovery.zen.ping.unicast.hosts=[ ${ES_NODE_PREFIX}-0, ${ES_NODE_PREFIX}-1, ${ES_NODE_PREFIX}-2 ]"
+      - "discovery.zen.minimum_master_nodes: 2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+  es-node-2:
+    hostname: ${ES_NODE_PREFIX}-2
+    image: docker.elastic.co/elasticsearch/elasticsearch:${VER}
+    container_name: ${ES_NODE_PREFIX}-2
+    environment:
+      - cluster.name=${CLUSTER}
+      - node.name=${ES_NODE_PREFIX}-2
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms${JVM_MEM} -Xmx${JVM_MEM}"
+      - "discovery.zen.ping.unicast.hosts=[ ${ES_NODE_PREFIX}-0, ${ES_NODE_PREFIX}-1, ${ES_NODE_PREFIX}-2 ]"
+      - "discovery.zen.minimum_master_nodes: 2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${VER}
+    container_name: kibana
+    environment:
+      SERVER_NAME: kibana.local
+      ELASTICSEARCH_URL: http://${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}
+    ports:
+      - 5601:${PUBLIC_KIBANA_PORT}
+    networks:
+      - esnet
+    depends_on:
+      - ${ES_NODE_PREFIX}-0
+  # filebeat:
+  #   image: docker.elastic.co/filebeat/filebeat:${VER}
+  #   container_name: filebeat
+  #   environment:
+  #     - SERVER_NAME=filebeat.local
+  #     - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
+  #     - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}]
+  #   networks:
+  #     - esnet
+  #   depends_on:
+  #     - kibana
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:${VER}
+  #   container_name: logstash
+  #   environment:
+  #     - SERVER_NAME=logstash.local
+  #     - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
+  #     - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}]
+  #   networks:
+  #     - esnet
+  #   depends_on:
+  #     - kibana
+
+volumes:
+  esdata0:
+    driver: local
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+
+networks:
+  esnet:
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/6.5/docker.html

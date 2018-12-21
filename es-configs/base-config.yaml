@@ -1,0 +1,10 @@
+cluster.name: my_cluster
+node.name: ${NODENAME}
+network.host: _site_
+discovery.zen.ping.unicast.hosts: [ "server1" ]
+discovery.zen.minimum_master_nodes: 1
+# xpack.security.enabled: true
+# node.attr.example: "new"
+node.master: true
+node.data: true
+node.ingest: true
