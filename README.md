@@ -13,7 +13,7 @@ Default configuration will create a three node Elasticsearch cluster with a thre
 The nodes will use the latest stable version 6.5.4 at the time of writing.
 Some configs are stored in .env
 
-1. (Assuming you already have docker installed and running)
+1. (Assuming you already have docker installed and running, with enough [memory](#containers-die-randomly-without-clear-errors) allocated)
 ```$ docker-compose up```
 2. Click [http://localhost:5601](http://localhost:5601)
 3. ....
@@ -61,6 +61,9 @@ To remove the volumes, run
 ```docker volume ls | grep "esdata" | awk '{print $2}' | xargs docker volume rm```
 
 ## Troubleshooting
+
+### Containers Die Randomly without Clear Errors
+Docker is known to just kill containers ungracefully if it does not have enough memory. With many containers running as part of these clusters the default configuration is known to work with Docker Desktop (on Mac: Docker > Preferences > Advanced) at **6 CPUs** and **12 GiB** of memory.
 
 ### Not able to switch between basic and trial (platinum) licenses
 _If you reconfigure the license configuration in `docker-compose.yaml`, and restart the containers, it is not always picked up. This information appears to be persisted in the volumes. So you need to remove the volumes as shown below or above.
