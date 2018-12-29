@@ -7,7 +7,9 @@ Quickly spin up a Docker cluster of Elastic products for testing
 
 ## Quickstart
 
-Default configuration will create a three node cluster with an additional kibana node.
+Default configuration will create a three node Elasticsearch cluster with a three node Logstash cluster and an additional Kibana node. _(Comment-out or delete entire service blocks in `docker-compose.yaml` to reduce the number of nodes in these clusters.)_
+
+
 The nodes will use the latest stable version 6.5.4 at the time of writing.
 Some configs are stored in .env
 
