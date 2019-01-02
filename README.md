@@ -15,7 +15,7 @@ Some configs are stored in .env
 
 1. (Assuming you already have docker installed and running, with enough [memory](#containers-die-randomly-without-clear-errors) allocated)
 ```$ docker-compose up```
-2. Click [http://localhost:5656](http://localhost:5656)
+2. Click [http://localhost:5601](http://localhost:5601)
 3. ....
 4. Profit
 
@@ -50,7 +50,11 @@ Once up and running, use the `ELASTIC_USERNAME` and `ELASTIC_PASSWORD` env varia
 ## Cleanup or Fresh Restart
 When you stop the containers with CTRL-C, they still exist in a stopped state as well as their volumes. Doing `docker-compose up` again, will just restart those containers, and reuse the data in those volumes.
 
-That may be what you want. However, if you want to start fresh, with know persisted data, state, or configuration, remove the stopped containers and volumes using the below command
+That may be what you want. However, if you want to start fresh, without persisted data, state, or configuration, remove the stopped containers and volumes.
+
+Example to delete the elasticsearch node containers created by the docker-compose file:
+
+```docker ps -a -f name="es-node-*" -q | xargs docker rm```
 
 :warning: This will remove _any_ container you have from org `docker.elastic.co`. Adjust the `grep` pattern as needed.
 
