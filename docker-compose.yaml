@@ -1,43 +1,31 @@
 version: '3.2'
 services:
-  es-node-0:
-    hostname: ${ES_NODE_PREFIX}-0
-    image: docker.elastic.co/elasticsearch/elasticsearch:${VER}
-    container_name: ${ES_NODE_PREFIX}-0
-    environment:
-      - cluster.name=${CLUSTER}
-      - node.name=${ES_NODE_PREFIX}-0
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms${JVM_MEM} -Xmx${JVM_MEM}"
-      - "discovery.zen.ping.unicast.hosts=[ ${ES_NODE_PREFIX}-0, ${ES_NODE_PREFIX}-1, ${ES_NODE_PREFIX}-2 ]"
-      - "discovery.zen.minimum_master_nodes: 2"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - esdata0:/usr/share/elasticsearch/data
-    ports:
-      - 9200:${PUBLIC_ELASTIC_PORT}
-    networks:
-      - esnet
   es-node-1:
     hostname: ${ES_NODE_PREFIX}-1
     image: docker.elastic.co/elasticsearch/elasticsearch:${VER}
     container_name: ${ES_NODE_PREFIX}-1
     environment:
       - cluster.name=${CLUSTER}
+      - network.host=0.0.0.0
       - node.name=${ES_NODE_PREFIX}-1
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms${JVM_MEM} -Xmx${JVM_MEM}"
-      - "discovery.zen.ping.unicast.hosts=[ ${ES_NODE_PREFIX}-0, ${ES_NODE_PREFIX}-1, ${ES_NODE_PREFIX}-2 ]"
-      - "discovery.zen.minimum_master_nodes: 2"
+      - "ES_JAVA_OPTS=-Xms${ES_NODE_JVM_HEAP_MEM} -Xmx${ES_NODE_JVM_HEAP_MEM}"
+      - "discovery.zen.ping.unicast.hosts=${ES_NODE_PREFIX}-1,${ES_NODE_PREFIX}-2,${ES_NODE_PREFIX}-3"
+      - discovery.zen.minimum_master_nodes=2
+      - xpack.monitoring.collection.enabled=true
+      # Enabling security is required to use centralized logstash pipelines
+      # And license type needs to be upgraded from "basic" to "trial" in order to enable security
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.license.self_generated.type=${XPACK_LICENSE_SELF_GENERATED_TYPE}  
+      - xpack.security.enabled=${XPACK_SECURITY_ENABLED}
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
       - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:${PUBLIC_ELASTIC_PORT}
     networks:
       - esnet
   es-node-2:
@@ -46,11 +34,18 @@ services:
     container_name: ${ES_NODE_PREFIX}-2
     environment:
       - cluster.name=${CLUSTER}
+      - network.host=0.0.0.0
       - node.name=${ES_NODE_PREFIX}-2
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms${JVM_MEM} -Xmx${JVM_MEM}"
-      - "discovery.zen.ping.unicast.hosts=[ ${ES_NODE_PREFIX}-0, ${ES_NODE_PREFIX}-1, ${ES_NODE_PREFIX}-2 ]"
-      - "discovery.zen.minimum_master_nodes: 2"
+      - "ES_JAVA_OPTS=-Xms${ES_NODE_JVM_HEAP_MEM} -Xmx${ES_NODE_JVM_HEAP_MEM}"
+      - "discovery.zen.ping.unicast.hosts=${ES_NODE_PREFIX}-1,${ES_NODE_PREFIX}-2,${ES_NODE_PREFIX}-3"
+      - discovery.zen.minimum_master_nodes=2
+      - xpack.monitoring.collection.enabled=true
+      # Enabling security is required to use centralized logstash pipelines
+      # And license type needs to be upgraded from "basic" to "trial" in order to enable security
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.license.self_generated.type=${XPACK_LICENSE_SELF_GENERATED_TYPE}  
+      - xpack.security.enabled=${XPACK_SECURITY_ENABLED}
     ulimits:
       memlock:
         soft: -1
@@ -59,47 +54,170 @@ services:
       - esdata2:/usr/share/elasticsearch/data
     networks:
       - esnet
+  es-node-3:
+    hostname: ${ES_NODE_PREFIX}-3
+    image: docker.elastic.co/elasticsearch/elasticsearch:${VER}
+    container_name: ${ES_NODE_PREFIX}-3
+    environment:
+      - cluster.name=${CLUSTER}
+      - network.host=0.0.0.0
+      - node.name=${ES_NODE_PREFIX}-3
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms${ES_NODE_JVM_HEAP_MEM} -Xmx${ES_NODE_JVM_HEAP_MEM}"
+      - "discovery.zen.ping.unicast.hosts=${ES_NODE_PREFIX}-1,${ES_NODE_PREFIX}-2,${ES_NODE_PREFIX}-3"
+      - discovery.zen.minimum_master_nodes=2
+      - xpack.monitoring.collection.enabled=true
+      # Enabling security is required to use centralized logstash pipelines
+      # And license type needs to be upgraded from "basic" to "trial" in order to enable security
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.license.self_generated.type=${XPACK_LICENSE_SELF_GENERATED_TYPE} 
+      - xpack.security.enabled=${XPACK_SECURITY_ENABLED}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata3:/usr/share/elasticsearch/data
+    networks:
+      - esnet
   kibana:
     image: docker.elastic.co/kibana/kibana:${VER}
     container_name: kibana
     environment:
-      SERVER_NAME: kibana.local
-      ELASTICSEARCH_URL: http://${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}
+      # NOTE: Kibana env vars DO NOT take the YAML dotted syntax from kibana.yml. Uppercase and underscore in place of dots.
+      - SERVER_NAME=kibana.local
+      - ELASTICSEARCH_URL=http://${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT}
+      - ELASTICSEARCH_USERNAME=${KIBANA_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      #- XPACK_SECURITY_ENABLED=${XPACK_SECURITY_ENABLED}
+      #- xpack.license.self_generated.type=${XPACK_LICENSE_SELF_GENERATED_TYPE} 
+      #- elasticsearch.username=${KIBANA_USERNAME}
+      #- elasticsearch.password=${ELASTIC_PASSWORD}
+      - XPACK_MONITORING_ELASTICSEARCH_USERNAME=${KIBANA_USERNAME}
+      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      # Logging
+      #- LOGGING_VERBOSE=true
+      #- LOGGING_LOG_QUERIES=true
     ports:
       - 5601:${PUBLIC_KIBANA_PORT}
     networks:
       - esnet
     depends_on:
-      - ${ES_NODE_PREFIX}-0
+      - ${ES_NODE_PREFIX}-1
   # filebeat:
   #   image: docker.elastic.co/filebeat/filebeat:${VER}
   #   container_name: filebeat
   #   environment:
   #     - SERVER_NAME=filebeat.local
   #     - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
-  #     - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}]
+  #     - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT}]
   #   networks:
   #     - esnet
   #   depends_on:
   #     - kibana
-  # logstash:
-  #   image: docker.elastic.co/logstash/logstash:${VER}
-  #   container_name: logstash
-  #   environment:
-  #     - SERVER_NAME=logstash.local
-  #     - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
-  #     - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-0:${PUBLIC_ELASTIC_PORT}]
-  #   networks:
-  #     - esnet
-  #   depends_on:
-  #     - kibana
+  ls-node-1:
+    image: docker.elastic.co/logstash/logstash:${VER}
+    container_name: ${LS_NODE_PREFIX}-1
+    environment:
+      - SERVER_NAME=${LS_NODE_PREFIX}-1
+      - node.name=${LS_NODE_PREFIX}-1
+      - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
+      - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      - "LS_JAVA_OPTS=-Xms${LS_NODE_JVM_HEAP_MEM} -Xmx${LS_NODE_JVM_HEAP_MEM}"
+      # (https://www.elastic.co/guide/en/logstash/6.5/logstash-monitoring-overview.html): 
+      #   Unlike X-Pack monitoring for Elasticsearch and Kibana, there is no 
+      #   xpack.monitoring.collection.enabled setting on Logstash. You must use the
+      #   xpack.monitoring.enabled setting to enable and disable data collection.
+      - xpack.monitoring.enabled=${XPACK_MONITORING_ENABLED}
+      - xpack.monitoring.elasticsearch.url=[http://${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      - xpack.monitoring.elasticsearch.username=${LOGSTASH_USERNAME}
+      - xpack.monitoring.elasticsearch.password=${ELASTIC_PASSWORD}      
+      # Enabling Centralized Configuration Management of Logstash: https://www.elastic.co/guide/en/logstash/current/configuring-centralized-pipelines.html
+      - xpack.management.enabled=${XPACK_MANAGEMENT_ENABLED}
+      - xpack.management.elasticsearch.url=[http://${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      # Enabling security is required to use centralized logstash pipelines
+      - xpack.management.elasticsearch.username=${LOGSTASH_USERNAME}
+      - xpack.management.elasticsearch.password=${ELASTIC_PASSWORD} 
+      - xpack.management.logstash.poll_interval=15s
+      - xpack.management.pipeline.id=[${LOGSTASH_MANAGED_PIPELINES}]
+    networks:
+      - esnet
+    depends_on:
+      - kibana
+      - ${ES_NODE_PREFIX}-1
+      - ${ES_NODE_PREFIX}-2
+      - ${ES_NODE_PREFIX}-3
+  ls-node-2:
+    image: docker.elastic.co/logstash/logstash:${VER}
+    container_name: ${LS_NODE_PREFIX}-2
+    environment:
+      - SERVER_NAME=${LS_NODE_PREFIX}-2
+      - node.name=${LS_NODE_PREFIX}-2
+      - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
+      - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      - "LS_JAVA_OPTS=-Xms${LS_NODE_JVM_HEAP_MEM} -Xmx${LS_NODE_JVM_HEAP_MEM}"
+      # (https://www.elastic.co/guide/en/logstash/6.5/logstash-monitoring-overview.html): 
+      #   Unlike X-Pack monitoring for Elasticsearch and Kibana, there is no 
+      #   xpack.monitoring.collection.enabled setting on Logstash. You must use the
+      #   xpack.monitoring.enabled setting to enable and disable data collection.
+      - xpack.monitoring.enabled=${XPACK_MONITORING_ENABLED}
+      - xpack.monitoring.elasticsearch.url=[http://${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      - xpack.monitoring.elasticsearch.username=${LOGSTASH_USERNAME}
+      - xpack.monitoring.elasticsearch.password=${ELASTIC_PASSWORD}      
+      # Enabling Centralized Configuration Management of Logstash: https://www.elastic.co/guide/en/logstash/current/configuring-centralized-pipelines.html
+      - xpack.management.enabled=${XPACK_MANAGEMENT_ENABLED}
+      - xpack.management.elasticsearch.url=[http://${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      # Enabling security is required to use centralized logstash pipelines
+      - xpack.management.elasticsearch.username=${LOGSTASH_USERNAME}
+      - xpack.management.elasticsearch.password=${ELASTIC_PASSWORD} 
+      - xpack.management.logstash.poll_interval=15s
+      - xpack.management.pipeline.id=[${LOGSTASH_MANAGED_PIPELINES}]
+    networks:
+      - esnet
+    depends_on:
+      - kibana
+      - ${ES_NODE_PREFIX}-1
+      - ${ES_NODE_PREFIX}-2
+      - ${ES_NODE_PREFIX}-3
+  ls-node-3:
+    image: docker.elastic.co/logstash/logstash:${VER}
+    container_name: ${LS_NODE_PREFIX}-3
+    environment:
+      - SERVER_NAME=${LS_NODE_PREFIX}-3
+      - node.name=${LS_NODE_PREFIX}-3
+      - setup.kibana.host=kibana:${PUBLIC_KIBANA_PORT}
+      - output.elasticsearch.hosts=[${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      - "LS_JAVA_OPTS=-Xms${LS_NODE_JVM_HEAP_MEM} -Xmx${LS_NODE_JVM_HEAP_MEM}"
+      # (https://www.elastic.co/guide/en/logstash/6.5/logstash-monitoring-overview.html): 
+      #   Unlike X-Pack monitoring for Elasticsearch and Kibana, there is no 
+      #   xpack.monitoring.collection.enabled setting on Logstash. You must use the
+      #   xpack.monitoring.enabled setting to enable and disable data collection.
+      - xpack.monitoring.enabled=${XPACK_MONITORING_ENABLED}
+      - xpack.monitoring.elasticsearch.url=[http://${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      - xpack.monitoring.elasticsearch.username=${LOGSTASH_USERNAME}
+      - xpack.monitoring.elasticsearch.password=${ELASTIC_PASSWORD}      
+      # Enabling Centralized Configuration Management of Logstash: https://www.elastic.co/guide/en/logstash/current/configuring-centralized-pipelines.html
+      - xpack.management.enabled=${XPACK_MANAGEMENT_ENABLED}
+      - xpack.management.elasticsearch.url=[http://${ES_NODE_PREFIX}-1:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-2:${PUBLIC_ELASTIC_PORT},http://${ES_NODE_PREFIX}-3:${PUBLIC_ELASTIC_PORT}]
+      # Enabling security is required to use centralized logstash pipelines
+      - xpack.management.elasticsearch.username=${LOGSTASH_USERNAME}
+      - xpack.management.elasticsearch.password=${ELASTIC_PASSWORD} 
+      - xpack.management.logstash.poll_interval=15s
+      - xpack.management.pipeline.id=[${LOGSTASH_MANAGED_PIPELINES}]
+    networks:
+      - esnet
+    depends_on:
+      - kibana
+      - ${ES_NODE_PREFIX}-1
+      - ${ES_NODE_PREFIX}-2
+      - ${ES_NODE_PREFIX}-3
 
 volumes:
-  esdata0:
-    driver: local
   esdata1:
     driver: local
   esdata2:
+    driver: local
+  esdata3:
     driver: local
 
 networks:
