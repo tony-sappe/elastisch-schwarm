@@ -7,8 +7,8 @@ Quickly spin up a Docker cluster of Elastic products for testing
 
 ## Quickstart
 
-Default configuration will create a three node Elasticsearch cluster with a three node Logstash cluster and an additional Kibana node. _(Comment-out or delete entire service blocks in `docker-compose.yaml` to reduce the number of nodes in these clusters.)_
 
+Default configuration will create a three node Elasticsearch cluster with a three node Logstash cluster and an additional Kibana node. _(Comment-out or delete entire service blocks in `docker-compose.yaml` to reduce the number of nodes in these clusters.)_
 
 The nodes will use the latest stable version 6.5.4 at the time of writing.
 Some configs are stored in .env
@@ -48,9 +48,13 @@ XPACK_LICENSE_SELF_GENERATED_TYPE=trial
 Once up and running, use the `ELASTIC_USERNAME` and `ELASTIC_PASSWORD` env variable values to login.
 
 ## Cleanup or Fresh Restart
-When you stop the containers with CTRL-C, they still exist in a stopped state as well as their volumes. Doing `docker-compose up` again, will just restart those containers, and reuse the data in those volumes. 
+When you stop the containers with CTRL-C, they still exist in a stopped state as well as their volumes. Doing `docker-compose up` again, will just restart those containers, and reuse the data in those volumes.
 
-That may be what you want. However, if you want to start fresh, with know persisted data, state, or configuration, remove the stopped containers and volumes using the below command
+That may be what you want. However, if you want to start fresh, without persisted data, state, or configuration, remove the stopped containers and volumes.
+
+Example to delete the elasticsearch node containers created by the docker-compose file:
+
+```docker ps -a -f name="es-node-*" -q | xargs docker rm```
 
 :warning: This will remove _any_ container you have from org `docker.elastic.co`. Adjust the `grep` pattern as needed.
 
@@ -59,6 +63,15 @@ That may be what you want. However, if you want to start fresh, with know persis
 To remove the volumes, run
 
 ```docker volume ls | grep "esdata" | awk '{print $2}' | xargs docker volume rm```
+
+## Kibana Monitoring and X-Pack Trial
+
+Commands for both are store in `curl_cmds.sh`. Running the script will activate the 30-day X-Pack trial.
+
+
+## Custom Parameters
+See `.env` for some configuration settings. Edits will be applied when restarting using `docker-compose`
+
 
 ## Troubleshooting
 
